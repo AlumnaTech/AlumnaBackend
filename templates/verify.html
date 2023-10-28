@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify email address</title>
+</head>
+<h3>{% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+         <p>{{ message }}</p>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+</h3>
+<body>
+<form action="{{ url_for('verify', user_id=user.id) }}" method="POST">
+        <label>Enter code</label>
+        <input name="code" type="text">
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>

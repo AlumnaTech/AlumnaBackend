@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload File</title>
+  {{ dropzone.load_css() }}
+  {{ dropzone.style('border: 5px dashed purple; margin: 5%; min-height: 300px; min-width: 200px;') }}
+</head>
+<body>
+	<div style="color:Black;text-align:center;font-size:3rem;margin:5%;">
+	Upload file </div>
+
+  {{ dropzone.create(action='upload_file') }}
+  {{ dropzone.load_js() }}
+  {{ dropzone.config() }}
+</body>
+</html>
+
+
+

@@ -700,9 +700,6 @@ def verify(user_id):
 # ------FOR LOGIN IN----------------
 @app.route('/login', methods=['POST', 'GET'])
 def login():
-    global logged_in
-    global active_user
-
     if request.method == 'POST':
         data = request.get_json()
         email = data['email']
@@ -718,8 +715,8 @@ def login():
             if user.verified:
                 login_user(user)
                 logged_in = current_user.is_authenticated
+                session['logged_in'] = True
                 session['current_user'] = user.to_dict()
-                active_user = session.get('current_user')
 
                 return jsonify({"message": "Login successful", "logged_in": True}), 200
             else:
@@ -729,7 +726,8 @@ def login():
 
     if request.method == 'GET':
 
-        if 'logged_in':
+        if 'logged_in' in session:
+            active_user = session.get('current_user')
             # User is logged in
 
             return jsonify({"message": "User is logged in", "logged_in": True, "user": active_user}), 200

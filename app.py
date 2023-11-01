@@ -375,11 +375,11 @@ def dashboard():
 # ---------DRAG AND DROP FILES FOR MATERIAL POOL----------
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    print(request.headers.get('Content-Type'))
+    # print(request.headers.get('Content-Type'))
 
-    print("Form Data:", request.form)
+    # print("Form Data:", request.form)
 
-    print("files:", request.files.getlist("files"))
+    # print("files:", request.files.getlist("files"))
 
     if request.method == 'POST':
         uploaded_files = request.files.getlist("files")
@@ -589,12 +589,12 @@ def register():
 
         except IntegrityError as e:
             db.session.rollback()
-            print(f"Error during registration: {str(e)}")
+
             return jsonify({"message": "An error occurred while registering. Please try again later."}), 500
 
         except Exception as e:
             db.session.rollback()
-            print(f"Error during registration: {str(e)}")
+
             return jsonify({"message": "An unexpected error occurred. Please try again later."}), 500
 
 
@@ -612,7 +612,6 @@ def verify(user_id):
 
         # ------GENERATE VERIFICATION TOKEN AND SENDS EMAIL ONCE--------------
         token = generate_verification_token(user_id)
-        print(token)
 
         # ------GETS VERIFICATION CODE AND SETS VERIFICATION CODE TIME LIMIT---------
         code = generate_verification_code()
@@ -648,7 +647,6 @@ def verify(user_id):
        # Retrieve the stored code and its expiration time
         stored_code = requested_user.verification_code
         code_expiration = requested_user.verification_code_expiration
-        print(code_expiration)
 
         # ------CHECKS IF TIME LIMIT IS EXCEEDED----------
         if datetime.now() and code_expiration:
@@ -656,7 +654,7 @@ def verify(user_id):
                 return jsonify({"message": "The verification code has expired. Please request another code."}), 400
             else:
                 # ------CONFIRMS THAT CORRECT CODE WAS ENTERED---------
-                print(input_code, stored_code)
+
                 if confirm_code(input_code.strip(), stored_code.strip()) == True:
                     requested_user.verified = True
                     # Delete the verification code-related fields from the user object
@@ -722,7 +720,7 @@ def login():
                 logged_in = current_user.is_authenticated
                 session['current_user'] = user.to_dict()
                 active_user = session.get('current_user')
-                print(active_user)
+
                 return jsonify({"message": "Login successful", "logged_in": True}), 200
             else:
                 return jsonify({"message": "Your email is not yet verified. Please verify your email to proceed."}), 401

@@ -6,7 +6,6 @@ from pydrive.drive import GoogleDrive
 from flask_cors import CORS
 from flask import abort
 from functools import wraps
-from celery import Celery
 from datetime import datetime, timedelta
 import smtplib
 import random
@@ -24,7 +23,6 @@ import upload_folder
 
 
 app = Flask(__name__)
-celery = Celery(__name__)
 
 app.debug = True
 
@@ -85,16 +83,14 @@ def generate_verification_code():
 
 
 # ------TO SEND EMAIL-------------
-def send_mail(email, name, code, link):
+def send_mail(email, name, code):
     my_email = 'alumnatech@gmail.com'
     my_password = 'lmnkpqcwtuuvyuto'
 
     # ------OPENS VERIFICATION EMAIL TEXT AND INPUTS USERNAME AND GENERATED CODE---------------
     with open("verifyemail.txt", "r") as mail:
         email_template = mail.read()
-        # email_con = contents.replace("[NAME]", name)
-        # email_content = email_con.replace("[CODE]", code)
-        email_content = email_template.format(NAME=name, CODE=code, LINK=link)
+        email_content = email_template.format(NAME=name, CODE=code)
     with smtplib.SMTP("smtp.gmail.com") as connection:
         connection.starttls()
         connection.login(user=my_email, password=my_password)
@@ -140,8 +136,11 @@ class User(UserMixin, db.Model):
     institution = db.Column(db.String(200), nullable=False)
     matno = db.Column(db.String(20), nullable=False)
     class_rep = db.Column(db.String(10), nullable=False)
-    # Extra fields for verification
+
+    # Extra Temporary fields for verification
     verified = db.Column(db.Boolean, default=False, nullable=False)
+    verification_code = db.Column(db.String(4))
+    verification_code_expiration = db.Column(db.DateTime)
     attempts = db.Column(db.Integer, default=3)
 
     def to_dict(self):
@@ -322,7 +321,7 @@ def dashboard():
             db.session.delete(clas)
             db.session.commit()
 
-    # PAST TESTS
+    # PAST TESTSsession
     tests_check = Tests.query.all()
     for test in tests_check:
         if test.date < todays_date:
@@ -545,18 +544,14 @@ def add_presentation():
 # ------FOR REGISTRATION----------------
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    global verified
-    global existing_user
-
     if request.method == 'POST':
         data = request.get_json()
         try:
             # FIRST, CHECK TO SEE IF EMAIL IS ALREADY IN RECORD
             existing_user = User.query.filter_by(email=data['email']).first()
-            verified = existing_user.verified
 
             if existing_user:
-                if verified:
+                if existing_user.verified:
                     # User already exists and is verified
                     return jsonify({"message": "Your email address has been registered and verified, please log in!",
                                     }), 409
@@ -564,7 +559,7 @@ def register():
                     # User already exists but is not verified
                     return jsonify({
                         "message": "Your email address has been registered, but it is not yet verified. Please proceed to verification.",
-                        "verified": verified,
+                        "verified": existing_user.verified,
                         "id": existing_user.id,
                         "email": existing_user.email
                     }), 202
@@ -602,22 +597,11 @@ def register():
             print(f"Error during registration: {str(e)}")
             return jsonify({"message": "An unexpected error occurred. Please try again later."}), 500
 
-    if request.method == "GET":
-        if existing_user:
-            return jsonify({})
-
 
 # ------TO VERIFY USER EMAIL ADDRESS----------------
-code_expiration = None
-code = None
-
-
 @app.route('/verify/<int:user_id>', methods=['GET', 'POST', 'DELETE'])
 def verify(user_id):
     requested_user = User.query.get(user_id)
-
-    global code_expiration
-    global code
 
     # Check if the user already has an 'attempts' attribute in the database, and initialize it if not.
     if not hasattr(requested_user, 'attempts'):
@@ -631,15 +615,11 @@ def verify(user_id):
         print(token)
 
         # ------GETS VERIFICATION CODE AND SETS VERIFICATION CODE TIME LIMIT---------
-        if 'code' not in session:
-            initial_time = datetime.now()
-            time_limit = initial_time + timedelta(minutes=10)
-
-            code = generate_verification_code()
-            code_expiration = time_limit
-
-            print(code)
-            print(code_expiration)
+        code = generate_verification_code()
+        code_expiration = datetime.now() + timedelta(minutes=10)
+        requested_user.verification_code = code
+        requested_user.verification_code_expiration = code_expiration
+        db.session.commit()
 
         if token:
             send_mail(requested_user.email,
@@ -652,9 +632,11 @@ def verify(user_id):
         new_code = generate_verification_code()
         send_mail(requested_user.email, requested_user.name, new_code)
 
-        # Store the new code and its expiration time in the session
-        code = new_code
-        code_expiration = datetime.now() + timedelta(minutes=10)
+        # Store the new code and its expiration time in the databse
+        requested_user.verification_code = new_code
+        requested_user.verification_code_expiration = datetime.now() + \
+            timedelta(minutes=10)
+        db.session.commit()
 
         return jsonify({"message": "A new verification code has been sent to your inbox."}), 200
 
@@ -663,9 +645,9 @@ def verify(user_id):
         data = request.get_json()
         input_code = data['code']
 
-       # Retrieve the stored code and its expiration time from the session
-        stored_code = code
-        # code_expiration_time = code_expiration
+       # Retrieve the stored code and its expiration time
+        stored_code = requested_user.verification_code
+        code_expiration = requested_user.verification_code_expiration
         print(code_expiration)
 
         # ------CHECKS IF TIME LIMIT IS EXCEEDED----------
@@ -677,6 +659,9 @@ def verify(user_id):
                 print(input_code, stored_code)
                 if confirm_code(input_code.strip(), stored_code.strip()) == True:
                     requested_user.verified = True
+                    # Delete the verification code-related fields from the user object
+                    del requested_user.verification_code
+                    del requested_user.verification_code_expiration
                     db.session.commit()
                     return jsonify({"message": "You can now login to your account."}, 200)
 
@@ -696,6 +681,7 @@ def verify(user_id):
                         return jsonify({"message": "Verification failed. Your account has been deleted."}), 401
         else:
             print("no time")
+
     # Check if the token has expired
     token = request.args.get('token')
     try:

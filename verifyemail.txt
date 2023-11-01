@@ -8,13 +8,6 @@ Verification Code: {CODE}
 
 Please note that this verification code can only be used once and will expire after 10 minutes for security reasons. 
 
-To verify your email address, click the verification link below. This link will be valid for 24 hours from the time of registration. After 24 hours, the link will expire, and you will need to request a new one.
-
-Verification Link: {LINK}
-
-If you don't verify your email within 24 hours, your account will be automatically deleted for security reasons.
-
-Don't miss out on the benefits of Alumna! Click the verification link to get started.
 
 If you need assistance or have any questions, feel free to reach out to our support team.
 

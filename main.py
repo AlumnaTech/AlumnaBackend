@@ -1,3 +1,5 @@
+from flask import Flask, request, jsonify, session
+from flask_migrate import Migrate
 from getfilelistpy import getfilelist
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -13,8 +15,6 @@ from flask_login import UserMixin, login_user, LoginManager, login_required, cur
 from sqlalchemy.exc import IntegrityError
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_migrate import Migrate
-from flask import Flask, request, jsonify, session
 import werkzeug
 import os
 import tempfile
@@ -32,7 +32,8 @@ CORS(app)
 
 
 # Will change secret key eventually
-app.config['SECRET_KEY'] = '7d290cca20d192a4a68d64c6'
+app.config['SECRET_KEY'] = os.environ.get(
+    'SECRET_KEY', '7d290cca20d192a4a68d64c6')
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = True
 
@@ -84,15 +85,16 @@ def generate_verification_code():
 
 
 # ------TO SEND EMAIL-------------
-def send_mail(email, name, code):
+def send_mail(email, name, code, link):
     my_email = 'alumnatech@gmail.com'
     my_password = 'lmnkpqcwtuuvyuto'
 
     # ------OPENS VERIFICATION EMAIL TEXT AND INPUTS USERNAME AND GENERATED CODE---------------
     with open("verifyemail.txt", "r") as mail:
-        contents = mail.read()
-        email_con = contents.replace("[NAME]", name)
-        email_content = email_con.replace("[CODE]", code)
+        email_template = mail.read()
+        # email_con = contents.replace("[NAME]", name)
+        # email_content = email_con.replace("[CODE]", code)
+        email_content = email_template.format(NAME=name, CODE=code, LINK=link)
     with smtplib.SMTP("smtp.gmail.com") as connection:
         connection.starttls()
         connection.login(user=my_email, password=my_password)
@@ -543,19 +545,29 @@ def add_presentation():
 # ------FOR REGISTRATION----------------
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    global verified
+    global existing_user
+
     if request.method == 'POST':
         data = request.get_json()
         try:
             # FIRST, CHECK TO SEE IF EMAIL IS ALREADY IN RECORD
             existing_user = User.query.filter_by(email=data['email']).first()
+            verified = existing_user.verified
 
             if existing_user:
-                if existing_user.verified:
+                if verified:
                     # User already exists and is verified
-                    return jsonify({"message": "Your email address has been registered and verified, please log in!"}), 409
+                    return jsonify({"message": "Your email address has been registered and verified, please log in!",
+                                    }), 409
                 else:
                     # User already exists but is not verified
-                    return jsonify({"message": "Your email address has been registered, but it is not yet verified. Please proceed to verification."}), 409
+                    return jsonify({
+                        "message": "Your email address has been registered, but it is not yet verified. Please proceed to verification.",
+                        "verified": verified,
+                        "id": existing_user.id,
+                        "email": existing_user.email
+                    }), 202
 
             # CREATE RECORD
             plaintext_password = data['password']
@@ -589,6 +601,10 @@ def register():
             db.session.rollback()
             print(f"Error during registration: {str(e)}")
             return jsonify({"message": "An unexpected error occurred. Please try again later."}), 500
+
+    if request.method == "GET":
+        if existing_user:
+            return jsonify({})
 
 
 # ------TO VERIFY USER EMAIL ADDRESS----------------

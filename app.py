@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, session
+from flask_session import Session
 from flask_migrate import Migrate
 from getfilelistpy import getfilelist
 from pydrive.auth import GoogleAuth
@@ -32,8 +33,10 @@ CORS(app)
 # Will change secret key eventually
 app.config['SECRET_KEY'] = os.environ.get(
     'SECRET_KEY', '7d290cca20d192a4a68d64c6')
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_PERMANENT'] = True
+app.config["SESSION_PERMANENT"] = True
+app.config["SESSION_TYPE"] = "filesystem"
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=5)
+Session(app)
 
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Alumna_stuff.db'
@@ -556,13 +559,8 @@ def register():
                     return jsonify({"message": "Your email address has been registered and verified, please log in!",
                                     }), 409
                 else:
-                    # User already exists but is not verified
-                    return jsonify({
-                        "message": "Your email address has been registered, but it is not yet verified. Please proceed to verification.",
-                        "verified": existing_user.verified,
-                        "id": existing_user.id,
-                        "email": existing_user.email
-                    }), 202
+                    db.session.delete(existing_user)
+                    db.session.commit()
 
             # CREATE RECORD
             plaintext_password = data['password']
@@ -576,7 +574,7 @@ def register():
                 department=data['department'],
                 faculty=data['faculty'],
                 institution=data['institution'],
-                class_rep=data['classRep']
+                class_rep="yes"
             )
             db.session.add(new_user)
             db.session.commit()
@@ -589,12 +587,12 @@ def register():
 
         except IntegrityError as e:
             db.session.rollback()
-
+            print(e)
             return jsonify({"message": "An error occurred while registering. Please try again later."}), 500
 
         except Exception as e:
             db.session.rollback()
-
+            print(e)
             return jsonify({"message": "An unexpected error occurred. Please try again later."}), 500
 
 
@@ -646,6 +644,7 @@ def verify(user_id):
 
        # Retrieve the stored code and its expiration time
         stored_code = requested_user.verification_code
+
         code_expiration = requested_user.verification_code_expiration
 
         # ------CHECKS IF TIME LIMIT IS EXCEEDED----------
@@ -658,8 +657,8 @@ def verify(user_id):
                 if confirm_code(input_code.strip(), stored_code.strip()) == True:
                     requested_user.verified = True
                     # Delete the verification code-related fields from the user object
-                    del requested_user.verification_code
-                    del requested_user.verification_code_expiration
+                    # del requested_user.verification_code
+                    # del requested_user.verification_code_expiration
                     db.session.commit()
                     return jsonify({"message": "You can now login to your account."}, 200)
 
@@ -715,27 +714,29 @@ def login():
             if user.verified:
                 login_user(user)
                 logged_in = current_user.is_authenticated
-                session['logged_in'] = True
-                session['current_user'] = user.to_dict()
+                active_user = user.to_dict()
+                payload = {'user': active_user, 'logged_in': True}
+                token = jwt.encode(
+                    payload, app.config["SECRET_KEY"], algorithm="HS256")
 
-                return jsonify({"message": "Login successful", "logged_in": True}), 200
+                return jsonify({"message": "Login successful", 'token': token}), 200
             else:
                 return jsonify({"message": "Your email is not yet verified. Please verify your email to proceed."}), 401
         else:
             return jsonify({"message": "Password incorrect. Please try again."}), 401
 
-    if request.method == 'GET':
+    # if request.method == 'GET':
+    #     print(current_user)
+    #     if current_user.is_authenticated:
 
-        if 'logged_in' in session:
-            active_user = session.get('current_user')
-            # User is logged in
+    #         # User is logged in
 
-            return jsonify({"message": "User is logged in", "logged_in": True, "user": active_user}), 200
-        else:
-            # User is not logged in
-            return jsonify({"message": "User is not logged in", "logged_in": False}), 401
+    #         return jsonify({"message": "User is logged in", "logged_in": True, "user": current_user}), 200
+    #     else:
+    #         # User is not logged in
+    #         return jsonify({"message": "User is not logged in", "logged_in": False}), 401
 
-    return jsonify({"message": "Method not allowed"}), 405
+    # return jsonify({"message": "Method not allowed"}), 405
 
 
 # ------LOGS USER OUT----------

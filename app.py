@@ -136,19 +136,19 @@ def load_user(user_id):
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)
+    email = db.Column(db.String(2000), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)
-    name = db.Column(db.String(255), nullable=False)
-    level = db.Column(db.String(100), nullable=False)
-    department = db.Column(db.String(100), nullable=False)
-    faculty = db.Column(db.String(100), nullable=False)
-    institution = db.Column(db.String(100), nullable=False)
-    matno = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(2000), nullable=False)
+    level = db.Column(db.String(128), nullable=False)
+    department = db.Column(db.String(2000), nullable=False)
+    faculty = db.Column(db.String(2000), nullable=False)
+    institution = db.Column(db.String(2000), nullable=False)
+    matno = db.Column(db.String(255), nullable=False)
     class_rep = db.Column(db.String(120), nullable=False)
 
     # Extra Temporary fields for verification
     verified = db.Column(db.Boolean, default=False, nullable=False)
-    verification_code = db.Column(db.String(4))
+    verification_code = db.Column(db.String(20))
     verification_code_expiration = db.Column(db.DateTime)
     attempts = db.Column(db.Integer, default=3)
 

@@ -137,7 +137,7 @@ class User(UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(2000), unique=True, nullable=False)
-    password = db.Column(db.String(128), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(2000), nullable=False)
     level = db.Column(db.String(128), nullable=False)
     department = db.Column(db.String(2000), nullable=False)

@@ -144,7 +144,7 @@ class User(UserMixin, db.Model):
     faculty = db.Column(db.String(100), nullable=False)
     institution = db.Column(db.String(100), nullable=False)
     matno = db.Column(db.String(20), nullable=False)
-    class_rep = db.Column(db.Boolean, nullable=False)
+    class_rep = db.Column(db.String(50), nullable=False)
 
     # Extra Temporary fields for verification
     verified = db.Column(db.Boolean, default=False, nullable=False)

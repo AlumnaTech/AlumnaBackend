@@ -22,6 +22,7 @@ import shutil
 
 import upload_folder
 
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 
@@ -29,17 +30,22 @@ app.debug = True
 
 CORS(app)
 
-
-# Will change secret key eventually
 app.config['SECRET_KEY'] = os.environ.get(
     'SECRET_KEY', '7d290cca20d192a4a68d64c6')
+
+# SESSION CONFIGURATION
 app.config["SESSION_PERMANENT"] = True
 app.config["SESSION_TYPE"] = "filesystem"
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=5)
 Session(app)
 
+# DATABASE CONFIGURATION
+if os.getenv('DATABASE_URL'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
+        'DATABASE_URL').replace("postgres://", "postgresql://", 1)
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.abspath(os.path.join(BASEDIR, 'instance', 'alumna.db'))}"
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Alumna_stuff.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)

@@ -136,15 +136,15 @@ def load_user(user_id):
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(50), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    level = db.Column(db.String(10), nullable=False)
-    department = db.Column(db.String(200), nullable=False)
-    faculty = db.Column(db.String(200), nullable=False)
-    institution = db.Column(db.String(200), nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    password = db.Column(db.String(128), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    level = db.Column(db.String(20), nullable=False)
+    department = db.Column(db.String(100), nullable=False)
+    faculty = db.Column(db.String(100), nullable=False)
+    institution = db.Column(db.String(100), nullable=False)
     matno = db.Column(db.String(20), nullable=False)
-    class_rep = db.Column(db.String(10), nullable=False)
+    class_rep = db.Column(db.Boolean, nullable=False)
 
     # Extra Temporary fields for verification
     verified = db.Column(db.Boolean, default=False, nullable=False)

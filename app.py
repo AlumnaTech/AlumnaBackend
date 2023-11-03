@@ -139,12 +139,12 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)
     name = db.Column(db.String(255), nullable=False)
-    level = db.Column(db.String(20), nullable=False)
+    level = db.Column(db.String(50), nullable=False)
     department = db.Column(db.String(100), nullable=False)
     faculty = db.Column(db.String(100), nullable=False)
     institution = db.Column(db.String(100), nullable=False)
-    matno = db.Column(db.String(20), nullable=False)
-    class_rep = db.Column(db.String(50), nullable=False)
+    matno = db.Column(db.String(50), nullable=False)
+    class_rep = db.Column(db.String(120), nullable=False)
 
     # Extra Temporary fields for verification
     verified = db.Column(db.Boolean, default=False, nullable=False)

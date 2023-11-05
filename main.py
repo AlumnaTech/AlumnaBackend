@@ -30,8 +30,7 @@ app.debug = True
 
 CORS(app)
 
-app.config['SECRET_KEY'] = os.environ.get(
-    'SECRET_KEY', '7d290cca20d192a4a68d64c6')
+app.config['SECRET_KEY'] = os.environ.get('FLASK_KEY')
 
 # SESSION CONFIGURATION
 app.config["SESSION_PERMANENT"] = True
@@ -40,11 +39,12 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=5)
 Session(app)
 
 # DATABASE CONFIGURATION
-if os.getenv('DATABASE_URL'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
-        'DATABASE_URL').replace("postgres://", "postgresql://", 1)
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.abspath(os.path.join(BASEDIR, 'instance', 'alumna.db'))}"
+# if os.getenv('DATABASE_URL'):
+#     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
+#         'DATABASE_URL').replace("postgres://", "postgresql://", 1)
+# else:
+#     app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.abspath(os.path.join(BASEDIR, 'instance', 'alumna.db'))}"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_URI','sqlite:///Alumna_stuff.db')
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -767,4 +767,4 @@ def delete_user(user_id):
 
 # ------RUN APP----------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
